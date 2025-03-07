@@ -13,22 +13,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::env;
-use alpaca_rs::AlpacaClient;
+// Serialize a HeaderMap to a map of string keys and string values
 
-#[tokio::main]
-async fn main() -> Result<(),Box<dyn std::error::Error>>
+
+use serde::Serializer;
+use serde::ser::SerializeMap;
+use reqwest::header::HeaderMap;
+
+pub fn serialize_headers<S>(headers: &HeaderMap, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
 {
-    let client = AlpacaClient::connect(
-            env::var("ALPACA_API_KEY").unwrap().as_str(),
-            env::var("ALPACA_SECRET_KEY").unwrap().as_str())
-        .await?;
+    let mut map = serializer.serialize_map(Some(headers.len()))?;
 
-    let positions = client.get_positions().await?;
+    for (name, value) in headers.iter() {
+        let name_str = name.as_str();
+        if let Ok(value_str) = value.to_str() {
+            map.serialize_entry(name_str, value_str)?;
+        }
+    }
 
-    println!("Client {}", serde_json::to_string_pretty(&client).unwrap());
-
-    println!("{}", serde_json::to_string_pretty(&positions).unwrap());
-
-    Ok(())
+    map.end()
 }

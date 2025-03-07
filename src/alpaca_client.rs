@@ -40,10 +40,13 @@ pub enum AlpacaError {
     Other(String),
 }
 
+#[derive(Debug, Serialize)]
 pub struct AlpacaClient {
     pub(crate) base_url: String,
     pub(crate) data_url: String,
+    #[serde(serialize_with = "crate::utils::serialize_headers")]
     pub(crate) headers: header::HeaderMap,
+    #[serde(skip)]  // Skip serializing client
     pub(crate) client: Client,
     pub(crate) info: Value
 }

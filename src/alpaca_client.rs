@@ -42,10 +42,11 @@ pub enum AlpacaError {
 }
 
 pub struct AlpacaClient {
-    base_url: String,
-    data_url: String,
-    headers: header::HeaderMap,
-    client: Client,
+    pub(crate) base_url: String,
+    pub(crate) data_url: String,
+    pub(crate) headers: header::HeaderMap,
+    pub(crate) client: Client,
+    pub(crate) info: Value
 }
 
 impl AlpacaClient {
@@ -54,7 +55,7 @@ impl AlpacaClient {
             return Err(AlpacaError::InvalidKeyFormat);
         }
 
-        let mut headers = header::HeaderMap::new();
+        let mut headers = header::HeaderMap::with_capacity(3);
         headers.insert(
             "APCA-API-KEY-ID",
             header::HeaderValue::from_str(&api_key).map_err(|_| AlpacaError::InvalidKeyFormat)?,
@@ -68,43 +69,45 @@ impl AlpacaClient {
             header::HeaderValue::from_static("application/json"),
         );
 
-        let client = Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()?;
-
-        let alpaca = Self {
+        let mut alpaca = Self {
             base_url: "https://paper-api.alpaca.markets".to_string(),
             data_url: "https://data.alpaca.markets".to_string(),
             headers,
-            client,
+            client: Client::builder().build()?,
+            info: Value::Null
         };
 
-        alpaca.get_account().await?;
+        alpaca.info = alpaca.get_account().await?;
         info!("Alpaca API client initialized successfully");
+
         Ok(alpaca)
     }
 
-    fn validate_keys(api_key: &str, api_secret: &str) -> bool {
+    pub(crate) fn validate_keys(api_key: &str, api_secret: &str) -> bool {
         let key_re = Regex::new(r"^(PK|AK)[A-Z0-9]{10,}$").unwrap();
         let secret_re = Regex::new(r"^[A-Za-z0-9]{40,}$").unwrap();
         key_re.is_match(api_key) && secret_re.is_match(api_secret)
     }
 
-    async fn make_request(
+    pub(crate) async fn make_request(
         &self,
         method: Method,
         endpoint: &str,
         base_url: &str,
         query: Option<&impl Serialize>,
         body: Option<&impl Serialize>,
-        timeout: Duration,
+        timeout: Option<Duration>
     ) -> Result<Value, AlpacaError> {
-        let url = format!("{}{}", base_url, endpoint);
-        let url = Url::parse(&url).map_err(|e| AlpacaError::Other(e.to_string()))?;
 
-        let mut request = self.client.request(method.clone(), url)
-            .headers(self.headers.clone())
-            .timeout(timeout);
+        let url = Url::parse(
+                &format!("{}{}", base_url, endpoint)
+            ).map_err(|e| AlpacaError::Other(e.to_string()))?;
+
+        let mut request =
+            self.client
+                .request(method.clone(), url)
+                .headers(self.headers.clone())
+                .timeout(timeout.unwrap_or(Duration::from_secs(30)));
 
         if let Some(query) = query {
             request = request.query(query);
@@ -115,15 +118,18 @@ impl AlpacaClient {
 
         info!("Request: {} {}", method, endpoint);
 
-        let response = request.send().await.map_err(|e| {
-            if e.is_timeout() {
-                AlpacaError::Timeout
-            } else if e.is_connect() {
-                AlpacaError::ConnectionError(e.to_string())
-            } else {
-                AlpacaError::RequestError(e)
-            }
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| {
+                if e.is_timeout() {
+                    AlpacaError::Timeout
+                } else if e.is_connect() {
+                    AlpacaError::ConnectionError(e.to_string())
+                } else {
+                    AlpacaError::RequestError(e)
+                }
+            })?;
 
         let status = response.status();
         if !status.is_success() {
@@ -145,7 +151,7 @@ impl AlpacaClient {
                 &self.base_url,
                 None::<&()>,
                 None::<&()>,
-                Duration::from_secs(10),
+                Some(Duration::from_secs(10)),
             )
             .await
             .map_err(|e| {
@@ -161,7 +167,7 @@ impl AlpacaClient {
                 &self.base_url,
                 None::<&()>,
                 None::<&()>,
-                Duration::from_secs(30),
+                None,
             )
             .await
             .map_err(|e| {
@@ -203,7 +209,7 @@ impl AlpacaClient {
                 &self.base_url,
                 None::<&()>,
                 Some(&data),
-                Duration::from_secs(30),
+                None,
             )
             .await
             .map_err(|e| {
@@ -235,9 +241,7 @@ impl AlpacaClient {
             symbols: String,
         }
 
-        let params = QueryParams {
-            symbols: assets.join(","),
-        };
+        let params = QueryParams {symbols: assets.join(","),};
 
         self.make_request(
                 Method::GET,
@@ -245,7 +249,7 @@ impl AlpacaClient {
                 &self.data_url,
                 Some(&params),
                 None::<&()>,
-                Duration::from_secs(30),
+                None,
             )
             .await
             .map_err(|e| {
@@ -261,7 +265,7 @@ impl AlpacaClient {
                 &self.base_url,
                 None::<&()>,
                 None::<&()>,
-                Duration::from_secs(30),
+                None,
             )
             .await
             .map_err(|e| {

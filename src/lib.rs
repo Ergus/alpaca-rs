@@ -15,5 +15,8 @@
 
 
 mod alpaca_client;
-pub use alpaca_client::AlpacaClient;
+pub use alpaca_client::{AlpacaClient, AlpacaError};
+
+#[cfg(test)]
+mod tests;
 

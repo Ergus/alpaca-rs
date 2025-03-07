@@ -13,14 +13,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::env;
 use alpaca_rs::AlpacaClient;
 
 #[tokio::main]
 async fn main() -> Result<(),Box<dyn std::error::Error>>
 {
     let client = AlpacaClient::connect(
-        "PKCX4ZFB46VG8WJE46TJ",
-        "mIytMtNrhTpPwOUPL8rLdQf9Hf3MMQuB1pArFV8q")
+            env::var("ALPACA_API_KEY").unwrap().as_str(),
+            env::var("ALPACA_SECRET_KEY").unwrap().as_str())
         .await?;
 
     let positions = client.get_positions().await?;

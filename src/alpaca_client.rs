@@ -1,3 +1,20 @@
+// Copyright (C) 2025  Jimmy Aguilar Mena
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#![allow(dead_code)]
+
 use reqwest::{header, Client, Method, StatusCode, Url};
 use serde::Serialize;
 use serde_json::Value;
@@ -123,34 +140,34 @@ impl AlpacaClient {
 
     pub async fn get_account(&self) -> Result<Value, AlpacaError> {
         self.make_request(
-            Method::GET,
-            "/v2/account",
-            &self.base_url,
-            None::<&()>,
-            None::<&()>,
-            Duration::from_secs(10),
-        )
-        .await
-        .map_err(|e| {
-            error!("Failed to get account information: {}", e);
-            e
-        })
+                Method::GET,
+                "/v2/account",
+                &self.base_url,
+                None::<&()>,
+                None::<&()>,
+                Duration::from_secs(10),
+            )
+            .await
+            .map_err(|e| {
+                error!("Failed to get account information: {}", e);
+                e
+            })
     }
 
     pub async fn get_positions(&self) -> Result<Value, AlpacaError> {
         self.make_request(
-            Method::GET,
-            "/v2/positions",
-            &self.base_url,
-            None::<&()>,
-            None::<&()>,
-            Duration::from_secs(30),
-        )
-        .await
-        .map_err(|e| {
-            error!("Failed to get positions: {}", e);
-            e
-        })
+                Method::GET,
+                "/v2/positions",
+                &self.base_url,
+                None::<&()>,
+                None::<&()>,
+                Duration::from_secs(30),
+            )
+            .await
+            .map_err(|e| {
+                error!("Failed to get positions: {}", e);
+                e
+            })
     }
 
     pub async fn place_order(
@@ -161,6 +178,7 @@ impl AlpacaClient {
         order_type: Option<&str>,
         time_in_force: Option<&str>,
     ) -> Result<Value, AlpacaError> {
+
         #[derive(Serialize)]
         struct OrderData<'a> {
             symbol: &'a str,
@@ -180,18 +198,18 @@ impl AlpacaClient {
         };
 
         self.make_request(
-            Method::POST,
-            "/v2/orders",
-            &self.base_url,
-            None::<&()>,
-            Some(&data),
-            Duration::from_secs(30),
-        )
-        .await
-        .map_err(|e| {
-            error!("Failed to place order for {}: {}", symbol, e);
-            e
-        })
+                Method::POST,
+                "/v2/orders",
+                &self.base_url,
+                None::<&()>,
+                Some(&data),
+                Duration::from_secs(30),
+            )
+            .await
+            .map_err(|e| {
+                error!("Failed to place order for {}: {}", symbol, e);
+                e
+            })
     }
 
     pub async fn get_prices(
@@ -222,48 +240,33 @@ impl AlpacaClient {
         };
 
         self.make_request(
-            Method::GET,
-            &format!("/v2/stocks/{}/latest", price_type),
-            &self.data_url,
-            Some(&params),
-            None::<&()>,
-            Duration::from_secs(30),
-        )
-        .await
-        .map_err(|e| {
-            error!("Failed to get prices: {}", e);
-            e
-        })
+                Method::GET,
+                &format!("/v2/stocks/{}/latest", price_type),
+                &self.data_url,
+                Some(&params),
+                None::<&()>,
+                Duration::from_secs(30),
+            )
+            .await
+            .map_err(|e| {
+                error!("Failed to get prices: {}", e);
+                e
+            })
     }
 
     pub async fn get_order_info(&self, id: &str) -> Result<Value, AlpacaError> {
         self.make_request(
-            Method::GET,
-            &format!("/v2/orders/{}", id),
-            &self.base_url,
-            None::<&()>,
-            None::<&()>,
-            Duration::from_secs(30),
-        )
-        .await
-        .map_err(|e| {
-            error!("Failed to get order info: {}", e);
-            e
-        })
+                Method::GET,
+                &format!("/v2/orders/{}", id),
+                &self.base_url,
+                None::<&()>,
+                None::<&()>,
+                Duration::from_secs(30),
+            )
+            .await
+            .map_err(|e| {
+                error!("Failed to get order info: {}", e);
+                e
+            })
     }
-}
-
-#[tokio::main]
-async fn main() -> Result<(),Box<dyn std::error::Error>>
-{
-    let client = AlpacaClient::connect(
-        "PKCX4ZFB46VG8WJE46TJ",
-        "mIytMtNrhTpPwOUPL8rLdQf9Hf3MMQuB1pArFV8q")
-        .await?;
-
-    let positions = client.get_positions().await?;
-
-    println!("{}", serde_json::to_string_pretty(&positions).unwrap());
-
-    Ok(())
 }

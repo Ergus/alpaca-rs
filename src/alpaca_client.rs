@@ -15,11 +15,10 @@
 
 #![allow(dead_code)]
 
+use regex;
 use reqwest::{header, Client, Method, StatusCode, Url};
 use serde::Serialize;
 use serde_json::Value;
-use std::time::Duration;
-use regex::Regex;
 use thiserror::Error;
 use log::{info, error, warn};
 
@@ -84,8 +83,8 @@ impl AlpacaClient {
     }
 
     pub(crate) fn validate_keys(api_key: &str, api_secret: &str) -> bool {
-        let key_re = Regex::new(r"^(PK|AK)[A-Z0-9]{10,}$").unwrap();
-        let secret_re = Regex::new(r"^[A-Za-z0-9]{40,}$").unwrap();
+        let key_re = regex::Regex::new(r"^(PK|AK)[A-Z0-9]{10,}$").unwrap();
+        let secret_re = regex::Regex::new(r"^[A-Za-z0-9]{40,}$").unwrap();
         key_re.is_match(api_key) && secret_re.is_match(api_secret)
     }
 
@@ -96,7 +95,7 @@ impl AlpacaClient {
         base_url: &str,
         query: Option<&impl Serialize>,
         body: Option<&impl Serialize>,
-        timeout: Option<Duration>
+        timeout: Option<std::time::Duration>
     ) -> Result<Value, AlpacaError> {
 
         let url = Url::parse(
@@ -107,7 +106,7 @@ impl AlpacaClient {
             self.client
                 .request(method.clone(), url)
                 .headers(self.headers.clone())
-                .timeout(timeout.unwrap_or(Duration::from_secs(30)));
+                .timeout(timeout.unwrap_or(std::time::Duration::from_secs(30)));
 
         if let Some(query) = query {
             request = request.query(query);
@@ -151,7 +150,7 @@ impl AlpacaClient {
                 &self.base_url,
                 None::<&()>,
                 None::<&()>,
-                Some(Duration::from_secs(10)),
+                Some(std::time::Duration::from_secs(10)),
             )
             .await
             .map_err(|e| {

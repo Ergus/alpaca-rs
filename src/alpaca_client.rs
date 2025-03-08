@@ -21,6 +21,7 @@ use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 use log::{info, error, warn};
+use std::collections::HashMap;
 
 use crate::PriceType;
 
@@ -95,7 +96,7 @@ impl AlpacaClient {
         endpoint: &str,
         base_url: &str,
         query: &[(&str, &str)],
-        body: Option<&impl Serialize>,
+        body: Option<&HashMap<String, Value>>,
         timeout: Option<std::time::Duration>
     ) -> Result<Value, AlpacaError> {
 
@@ -150,7 +151,7 @@ impl AlpacaClient {
                 "/v2/account",
                 &self.base_url,
                 &[],
-                None::<&()>,
+                None,
                 Some(std::time::Duration::from_secs(10)),
             )
             .await
@@ -166,7 +167,7 @@ impl AlpacaClient {
                 "/v2/positions",
                 &self.base_url,
                 &[],
-                None::<&()>,
+                None,
                 None,
             )
             .await
@@ -185,30 +186,20 @@ impl AlpacaClient {
         time_in_force: Option<&str>,
     ) -> Result<Value, AlpacaError> {
 
-        #[derive(Serialize)]
-        struct OrderData<'a> {
-            symbol: &'a str,
-            qty: i64,
-            side: &'a str,
-            #[serde(rename = "type")]
-            type_: &'a str,
-            time_in_force: &'a str,
-        }
-
-        let data = OrderData {
-            symbol,
-            qty,
-            side,
-            type_: order_type.unwrap_or("market"),
-            time_in_force: time_in_force.unwrap_or("ioc"),
-        };
+        let order_map: HashMap<String, Value> = HashMap::from([
+            ("symbol".to_string(), Value::String(symbol.to_string())),
+            ("qty".to_string(), Value::Number(qty.into())),
+            ("side".to_string(), Value::String(side.to_string())),
+            ("type".to_string(), Value::String(order_type.unwrap_or("market").to_string())),
+            ("time_in_force".to_string(), Value::String(time_in_force.unwrap_or("ioc").to_string())),
+        ]);
 
         self.make_request(
                 Method::POST,
                 "/v2/orders",
                 &self.base_url,
                 &[],
-                Some(&data),
+                Some(&order_map),
                 None,
             )
             .await
@@ -233,7 +224,7 @@ impl AlpacaClient {
                 &format!("/v2/stocks/{}/latest", price_type),
                 &self.data_url,
                 &[("symbols", assets.join(",").as_str())],
-                None::<&()>,
+                None,
                 None,
             )
             .await
@@ -249,7 +240,7 @@ impl AlpacaClient {
                 &format!("/v2/orders/{}", id),
                 &self.base_url,
                 &[],
-                None::<&()>,
+                None,
                 None,
             )
             .await

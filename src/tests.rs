@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use serde::Serialize;
     use serde_json::{json,Value};
     use reqwest::StatusCode;
     use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -93,7 +92,7 @@ mod tests {
                 "/test-endpoint",
                 &client.base_url,
                 &[],
-                None::<&()>,
+                None,
                 Some(std::time::Duration::from_secs(5)),
             ).await;
 
@@ -124,7 +123,7 @@ mod tests {
                 "/error-endpoint",
                 &client.base_url,
                 &[],
-                None::<&()>,
+                None,
                 None,
             ).await;
 
@@ -156,13 +155,11 @@ mod tests {
                 "https://data.example.com"
             ).await;
 
-        #[derive(Serialize)]
-        struct TestBody {
-            data: String,
-        }
-
         let query = [("param1", "value1")];
-        let body = TestBody { data: "test-data".to_string() };
+        let body =
+            std::collections::HashMap::from([
+                ("data".to_string(), Value::String("test-data".to_string()))
+            ]);
 
         let result = client.make_request(
                 Method::POST,
@@ -449,7 +446,7 @@ mod tests {
                 "/slow-endpoint",
                 &client.base_url,
                 &[],
-                None::<&()>,
+                None,
                 Some(std::time::Duration::from_millis(100)), // Very short timeout
             ).await;
 

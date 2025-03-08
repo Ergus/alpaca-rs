@@ -84,18 +84,18 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.make_request(
-            Method::GET,
-            "/test-endpoint",
-            &client.base_url,
-            None::<&()>,
-            None::<&()>,
-            Some(std::time::Duration::from_secs(5)),
-        ).await;
+                Method::GET,
+                "/test-endpoint",
+                &client.base_url,
+                &[],
+                None::<&()>,
+                Some(std::time::Duration::from_secs(5)),
+            ).await;
 
         assert!(result.is_ok());
         let json = result.unwrap();
@@ -115,18 +115,18 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.make_request(
-            Method::GET,
-            "/error-endpoint",
-            &client.base_url,
-            None::<&()>,
-            None::<&()>,
-            None,
-        ).await;
+                Method::GET,
+                "/error-endpoint",
+                &client.base_url,
+                &[],
+                None::<&()>,
+                None,
+            ).await;
 
         assert!(result.is_err());
         match result {
@@ -152,31 +152,26 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
-
-        #[derive(Serialize)]
-        struct TestQuery {
-            param1: String,
-        }
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         #[derive(Serialize)]
         struct TestBody {
             data: String,
         }
 
-        let query = TestQuery { param1: "value1".to_string() };
+        let query = [("param1", "value1")];
         let body = TestBody { data: "test-data".to_string() };
 
         let result = client.make_request(
-            Method::POST,
-            "/test-with-params",
-            &client.base_url,
-            Some(&query),
-            Some(&body),
-            None,
-        ).await;
+                Method::POST,
+                "/test-with-params",
+                &client.base_url,
+                &query,
+                Some(&body),
+                None,
+            ).await;
 
         assert!(result.is_ok());
     }
@@ -203,9 +198,9 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.get_account().await;
 
@@ -243,9 +238,9 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.get_positions().await;
 
@@ -277,17 +272,17 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.place_order(
-            "AAPL",
-            10,
-            "buy",
-            None,
-            None
-        ).await;
+                "AAPL",
+                10,
+                "buy",
+                None,
+                None
+            ).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), order_response);
@@ -317,17 +312,17 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.place_order(
-            "TSLA",
-            5,
-            "sell",
-            Some("limit"),
-            Some("day")
-        ).await;
+                "TSLA",
+                5,
+                "sell",
+                Some("limit"),
+                Some("day")
+            ).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), order_response);
@@ -366,51 +361,30 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            "https://api.example.com",
-            &mock_server.uri()
-        ).await;
+                "https://api.example.com",
+                &mock_server.uri()
+            ).await;
 
         let result = client.get_prices(
-            &["AAPL", "MSFT"],
-            "bars"
-        ).await;
+                &["AAPL", "MSFT"],
+                PriceType::Bars
+            ).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), prices_data);
     }
 
     #[tokio::test]
-    async fn test_get_prices_invalid_type() {
-        let client = create_test_client(
-            "https://api.example.com",
-            "https://data.example.com"
-        ).await;
-
-        let result = client.get_prices(
-            &["AAPL", "MSFT"],
-            "invalid_type"
-        ).await;
-
-        assert!(result.is_err());
-        match result {
-            Err(AlpacaError::Other(msg)) => {
-                assert!(msg.contains("Invalid price type"));
-            },
-            _ => panic!("Expected Other error but got {:?}", result),
-        }
-    }
-
-    #[tokio::test]
     async fn test_get_prices_empty_assets() {
         let client = create_test_client(
-            "https://api.example.com",
-            "https://data.example.com"
-        ).await;
+                "https://api.example.com",
+                "https://data.example.com"
+            ).await;
 
         let result = client.get_prices(
-            &[],
-            "bars"
-        ).await;
+                &[],
+                PriceType::Bars
+            ).await;
 
         assert!(result.is_ok());
         let empty_obj = Value::Object(serde_json::Map::new());
@@ -442,9 +416,9 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.get_order_info("order-id-123").await;
 
@@ -465,19 +439,19 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         // Set a very short timeout to ensure it triggers
         let result = client.make_request(
-            Method::GET,
-            "/slow-endpoint",
-            &client.base_url,
-            None::<&()>,
-            None::<&()>,
-            Some(std::time::Duration::from_millis(100)), // Very short timeout
-        ).await;
+                Method::GET,
+                "/slow-endpoint",
+                &client.base_url,
+                &[],
+                None::<&()>,
+                Some(std::time::Duration::from_millis(100)), // Very short timeout
+            ).await;
 
         // This should result in a timeout error
         assert!(matches!(result, Err(AlpacaError::Timeout)));
@@ -496,9 +470,9 @@ mod tests {
             .await;
 
         let client = create_test_client(
-            &mock_server.uri(),
-            "https://data.example.com"
-        ).await;
+                &mock_server.uri(),
+                "https://data.example.com"
+            ).await;
 
         let result = client.get_account().await;
 

@@ -22,6 +22,8 @@ use serde_json::Value;
 use thiserror::Error;
 use log::{info, error, warn};
 
+use crate::PriceType;
+
 #[derive(Debug, Error)]
 pub enum AlpacaError {
     #[error("Invalid API key or secret format")]
@@ -66,10 +68,6 @@ impl AlpacaClient {
             "APCA-API-SECRET-KEY",
             header::HeaderValue::from_str(&api_secret).map_err(|_| AlpacaError::InvalidKeyFormat)?,
         );
-        headers.insert(
-            header::CONTENT_TYPE,
-            header::HeaderValue::from_static("application/json"),
-        );
 
         let mut alpaca = Self {
             base_url: "https://paper-api.alpaca.markets".to_string(),
@@ -96,7 +94,7 @@ impl AlpacaClient {
         method: Method,
         endpoint: &str,
         base_url: &str,
-        query: Option<&impl Serialize>,
+        query: &[(&str, &str)],
         body: Option<&impl Serialize>,
         timeout: Option<std::time::Duration>
     ) -> Result<Value, AlpacaError> {
@@ -111,7 +109,7 @@ impl AlpacaClient {
                 .headers(self.headers.clone())
                 .timeout(timeout.unwrap_or(std::time::Duration::from_secs(30)));
 
-        if let Some(query) = query {
+        if !query.is_empty() {
             request = request.query(query);
         }
         if let Some(body) = body {
@@ -151,7 +149,7 @@ impl AlpacaClient {
                 Method::GET,
                 "/v2/account",
                 &self.base_url,
-                None::<&()>,
+                &[],
                 None::<&()>,
                 Some(std::time::Duration::from_secs(10)),
             )
@@ -167,7 +165,7 @@ impl AlpacaClient {
                 Method::GET,
                 "/v2/positions",
                 &self.base_url,
-                None::<&()>,
+                &[],
                 None::<&()>,
                 None,
             )
@@ -209,7 +207,7 @@ impl AlpacaClient {
                 Method::POST,
                 "/v2/orders",
                 &self.base_url,
-                None::<&()>,
+                &[],
                 Some(&data),
                 None,
             )
@@ -223,33 +221,18 @@ impl AlpacaClient {
     pub async fn get_prices(
         &self,
         assets: &[&str],
-        price_type: &str,
+        price_type: PriceType,
     ) -> Result<Value, AlpacaError> {
-        let allowed_types = ["trades", "quotes", "bars"];
-        if !allowed_types.contains(&price_type) {
-            return Err(AlpacaError::Other(format!(
-                "Invalid price type: {}. Allowed: {}",
-                price_type,
-                allowed_types.join(", ")
-            )));
-        }
 
         if assets.is_empty() {
             return Ok(Value::Object(serde_json::Map::new()));
         }
 
-        #[derive(Serialize)]
-        struct QueryParams {
-            symbols: String,
-        }
-
-        let params = QueryParams {symbols: assets.join(","),};
-
         self.make_request(
                 Method::GET,
                 &format!("/v2/stocks/{}/latest", price_type),
                 &self.data_url,
-                Some(&params),
+                &[("symbols", assets.join(",").as_str())],
                 None::<&()>,
                 None,
             )
@@ -265,7 +248,7 @@ impl AlpacaClient {
                 Method::GET,
                 &format!("/v2/orders/{}", id),
                 &self.base_url,
-                None::<&()>,
+                &[],
                 None::<&()>,
                 None,
             )

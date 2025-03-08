@@ -15,6 +15,7 @@
 
 
 mod utils;
+pub use utils::PriceType;
 
 mod alpaca_client;
 pub use alpaca_client::{AlpacaClient, AlpacaError};

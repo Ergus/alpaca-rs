@@ -16,7 +16,9 @@
 // Serialize a HeaderMap to a map of string keys and string values
 
 
-use serde::Serializer;
+use std::{fmt, str::FromStr};
+
+use serde::{Serialize, Deserialize, Serializer};
 use serde::ser::SerializeMap;
 use reqwest::header::HeaderMap;
 
@@ -34,4 +36,35 @@ where
     }
 
     map.end()
+}
+
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum PriceType {
+    Trades,
+    Quotes,
+    Bars,
+}
+
+impl fmt::Display for PriceType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Trades => write!(f, "trades"),
+            Self::Quotes => write!(f, "quotes"),
+            Self::Bars => write!(f, "bars"),
+        }
+    }
+}
+
+impl FromStr for PriceType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "trades" => Ok(Self::Trades),
+            "quotes" => Ok(Self::Quotes),
+            "bars" => Ok(Self::Bars),
+            _ => Err(format!("Invalid value: {}. Expected one of: trades, quotes, bars", s)),
+        }
+    }
 }

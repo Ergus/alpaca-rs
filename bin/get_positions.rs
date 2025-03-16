@@ -24,7 +24,7 @@ async fn main() -> Result<(),Box<dyn std::error::Error>>
             env::var("ALPACA_SECRET_KEY").unwrap().as_str())
         .await?;
 
-    let positions = client.get_positions().await?;
+    let positions = client.get_positions().await.unwrap();
 
     println!("Client {}", serde_json::to_string_pretty(&client).unwrap());
 

@@ -211,4 +211,156 @@ impl AlpacaWrapper {
         self.position.cash.store(cash, atomic::Ordering::Relaxed);
     }
 
+    // pub fn manage_buy_signal_async(&self, ticker: &str) -> Option<Value> {
+    //     log::info!("Manage buy signal");
+
+    //     // Get seller price
+    //     let seller_price = {
+    //         let prices_guard = self.last_prices.read().unwrap();
+    //         prices_guard
+    //             .get(ticker)
+    //             .and_then(|asset_prices| asset_prices.get("quotes"))
+    //             .and_then(|quotes| quotes["ap"].as_f64())
+    //             .unwrap_or(0.0)
+    //     };
+
+    //     let cash = self.position.cash.load(atomic::Ordering::Relaxed);
+    //     let qty = (cash / seller_price).floor() as i64;
+
+    //     // Only buy if we have enough cash
+    //     if qty > 0 {
+    //         return Some(self.client.place_order_async(ticker, qty as i64, "buy", None, None).await);
+    //     }
+
+    //     None
+    // }
+
+    // pub fn manage_buy_signal(&self, ticker: &str) -> Option<Value> {
+    //     self.runtime.block_on(self.manage_buy_signal_async(ticker))
+    // }
+
+    // pub async fn manage_sell_signal_async(&self, ticker: &str) -> Option<Value> {
+    //     log::info!("Manage sell signal");
+
+    //     // Get position information
+    //     let (qty, entry_price) = {
+    //         let positions_guard = self.positions.read().unwrap();
+    //         if let Some(position) = positions_guard.get(ticker) {
+    //             (position.qty, position.entry)
+    //         } else {
+    //             (0.0, 0.0)
+    //         }
+    //     };
+
+    //     // Get buyer price
+    //     let buyer_price = {
+    //         let prices_guard = self.last_prices.read().unwrap();
+    //         prices_guard
+    //             .get(ticker)
+    //             .and_then(|asset_prices| asset_prices.get("quotes"))
+    //             .and_then(|quotes| quotes["bp"].as_f64())
+    //             .unwrap_or(0.0)
+    //     };
+
+    //     // Only place the order if we hold some and bought them cheaper than current price
+    //     if qty > 0.0 && buyer_price > entry_price {
+    //         return Some(self.client.place_order_async(ticker, qty as i64, "sell", None, None).await);
+    //     }
+
+    //     None
+    // }
+
+    // pub fn manage_sell_signal(&self, ticker: &str) -> Option<Value> {
+    //     self.runtime.block_on(self.manage_sell_signal_async(ticker))
+    // }
+
+    // Add this method to spawn background tasks for periodic updates
+    // pub fn start_background_updates(&self, update_interval_ms: u64) {
+    //     let last_prices = self.last_prices.clone();
+    //     let positions = self.positions.clone();
+    //     let cash = self.cash.clone();
+    //     let client = self.client.clone();
+    //     let assets = self.assets.clone();
+
+    //     // Spawn a Tokio task for periodic updates
+    //     self.runtime.spawn(async move {
+    //         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(update_interval_ms));
+
+    //         loop {
+    //             interval.tick().await;
+
+    //             // Update prices (most time-sensitive)
+    //             let items = vec!["trades", "quotes", "bars"];
+    //             let price_futures: Vec<_> = items.iter().map(|item| {
+    //                 let item_str = item.to_string();
+    //                 let client_clone = client.clone();
+    //                 let assets_clone = assets.clone();
+
+    //                 async move {
+    //                     let result = client_clone.get_prices(&assets_clone, &item_str).await;
+    //                     (item_str, result)
+    //                 }
+    //             }).collect();
+
+    //             let price_results = join_all(price_futures).await;
+
+    //             // Process price results
+    //             let mut results = HashMap::new();
+    //             for (item, result) in price_results {
+    //                 results.insert(item, result);
+    //             }
+
+    //             // Reshape results
+    //             let mut new_prices = HashMap::new();
+    //             for asset in &assets {
+    //                 let mut asset_prices = HashMap::new();
+    //                 for item in &items {
+    //                     if let Some(item_data) = results.get(*item) {
+    //                         if let Some(asset_data) = item_data.get(asset) {
+    //                             asset_prices.insert(item.to_string(), asset_data.clone());
+    //                         }
+    //                     }
+    //                 }
+    //                 new_prices.insert(asset.clone(), asset_prices);
+    //             }
+
+    //             // Update last_prices
+    //             {
+    //                 let mut prices_guard = last_prices.write().unwrap();
+    //                 *prices_guard = new_prices;
+    //             }
+
+    //             // Update positions (less frequently if desired)
+    //             let positions_result = client.get_positions_async().await;
+    //             let mut new_positions = HashMap::new();
+    //             for position in positions_result {
+    //                 let symbol = position["symbol"].as_str().unwrap_or_default().to_string();
+
+    //                 if assets.contains(&symbol) {
+    //                     new_positions.insert(symbol, Position {
+    //                         qty: position["qty_available"].as_str().unwrap_or("0.0").parse::<f64>().unwrap_or(0.0),
+    //                         value: position["market_value"].as_str().unwrap_or("0.0").parse::<f64>().unwrap_or(0.0),
+    //                         entry: position["avg_entry_price"].as_str().unwrap_or("0.0").parse::<f64>().unwrap_or(0.0),
+    //                         price: position["current_price"].as_str().unwrap_or("0.0").parse::<f64>().unwrap_or(0.0),
+    //                     });
+    //                 }
+    //             }
+
+    //             // Update positions
+    //             {
+    //                 let mut positions_guard = positions.write().unwrap();
+    //                 *positions_guard = new_positions;
+    //             }
+
+    //             // Update cash
+    //             let account = client.get_account_async().await;
+    //             let new_cash = account["cash"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+
+    //             {
+    //                 let mut cash_guard = cash.lock().unwrap();
+    //                 *cash_guard = new_cash;
+    //             }
+    //         }
+    //     });
+    // }
 }

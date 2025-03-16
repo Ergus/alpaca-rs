@@ -86,6 +86,42 @@ impl AlpacaClient {
         key_re.is_match(api_key) && secret_re.is_match(api_secret)
     }
 
+    /// Sends an HTTP request to the specified endpoint and returns the response as JSON.
+    ///
+    /// # Parameters
+    /// - `method`: The HTTP method to use (e.g., `GET`, `POST`).
+    /// - `endpoint`: The API endpoint to send the request to.
+    /// - `base_url`: The base URL of the API.
+    /// - `query`: A slice of key-value pairs representing the query parameters.
+    /// - `body`: An optional JSON body for the request.
+    /// - `timeout`: An optional request timeout (defaults to 30 seconds if `None`).
+    ///
+    /// # Returns
+    /// - `Ok(Value)`: The response body parsed as JSON if the request is successful.
+    /// - `Err(AlpacaError)`: An error variant if the request fails due to timeout, connection issues,
+    ///   or an unsuccessful HTTP response.
+    ///
+    /// # Errors
+    /// - `AlpacaError::Timeout` if the request times out.
+    /// - `AlpacaError::ConnectionError` if there is a connection issue.
+    /// - `AlpacaError::RequestError` for other request failures.
+    /// - `AlpacaError::HttpError` if the response has a non-success HTTP status code.
+    ///
+    /// # Logging
+    /// - Logs the request method and endpoint at the `info` level.
+    /// - Logs a warning if a rate limit is exceeded (HTTP 429).
+    ///
+    /// # Example
+    /// ```rust
+    /// let response = client.make_request(
+    ///     Method::GET,
+    ///     "/v1/assets",
+    ///     "https://paper-api.alpaca.markets",
+    ///     &[],
+    ///     None,
+    ///     Some(Duration::from_secs(10))
+    /// ).await?;
+    /// ```
     pub(crate) async fn make_request(
         &self,
         method: Method,

@@ -22,7 +22,6 @@ use serde_json::Value;
 use thiserror::Error;
 use log::{info, error, warn};
 use std::collections::HashMap;
-
 use crate::PriceType;
 
 #[derive(Debug, Error)]
@@ -51,11 +50,10 @@ pub struct AlpacaClient {
     pub(crate) headers: header::HeaderMap,
     #[serde(skip)]  // Skip serializing client
     pub(crate) client: Client,
-    pub(crate) info: Value
 }
 
 impl AlpacaClient {
-    pub async fn connect(api_key: &str, api_secret: &str) -> Result<Self, AlpacaError> {
+    pub fn connect(api_key: &str, api_secret: &str) -> Result<Self, AlpacaError> {
         if !Self::validate_keys(&api_key, &api_secret) {
             return Err(AlpacaError::InvalidKeyFormat);
         }
@@ -70,15 +68,13 @@ impl AlpacaClient {
             header::HeaderValue::from_str(&api_secret).map_err(|_| AlpacaError::InvalidKeyFormat)?,
         );
 
-        let mut alpaca = Self {
+        let alpaca = Self {
             base_url: "https://paper-api.alpaca.markets".to_string(),
             data_url: "https://data.alpaca.markets".to_string(),
             headers,
-            client: Client::builder().build()?,
-            info: Value::Null
+            client: Client::builder().build()?
         };
 
-        alpaca.info = alpaca.get_account().await?;
         info!("Alpaca API client initialized successfully");
 
         Ok(alpaca)
@@ -145,7 +141,8 @@ impl AlpacaClient {
         Ok(json)
     }
 
-    pub async fn get_account(&self) -> Result<Value, AlpacaError> {
+    pub async fn get_account_info(&self) -> Result<Value, AlpacaError>
+    {
         self.make_request(
                 Method::GET,
                 "/v2/account",
@@ -161,7 +158,8 @@ impl AlpacaClient {
             })
     }
 
-    pub async fn get_positions(&self) -> Result<Value, AlpacaError> {
+    pub async fn get_positions(&self) -> Result<Value, AlpacaError>
+    {
         self.make_request(
                 Method::GET,
                 "/v2/positions",
@@ -177,7 +175,7 @@ impl AlpacaClient {
             })
     }
 
-    pub async fn place_order(
+    pub async fn place_order_async(
         &self,
         symbol: &str,
         qty: i64,
@@ -211,10 +209,10 @@ impl AlpacaClient {
 
     pub async fn get_prices(
         &self,
-        assets: &[&str],
+        assets: &[String],
         price_type: PriceType,
-    ) -> Result<Value, AlpacaError> {
-
+    ) -> Result<Value, AlpacaError>
+    {
         if assets.is_empty() {
             return Ok(Value::Object(serde_json::Map::new()));
         }
@@ -234,7 +232,8 @@ impl AlpacaClient {
             })
     }
 
-    pub async fn get_order_info(&self, id: &str) -> Result<Value, AlpacaError> {
+    pub async fn get_order_info_async(&self, id: &str) -> Result<Value, AlpacaError>
+    {
         self.make_request(
                 Method::GET,
                 &format!("/v2/orders/{}", id),

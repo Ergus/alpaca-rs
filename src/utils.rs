@@ -98,3 +98,69 @@ impl Default for AtomicF64 {
     }
 }
 
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub(crate) struct Position {
+    pub qty: f64,
+    pub value: f64,
+    pub entry: f64,
+    pub price: f64,
+}
+
+
+// Module to handle serialization of Arc<RwLock<HashMap>>
+pub(crate) mod arc_rwlock_hashmap {
+    use super::*;
+    use serde::{Deserializer, Serializer};
+
+    pub fn serialize<S>(
+        value: &Arc<RwLock<HashMap<String, Position>>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let map = value.read().map_err(serde::ser::Error::custom)?;
+        HashMap::serialize(&*map, serializer)
+    }
+
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<Arc<RwLock<HashMap<String, Position>>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let map = HashMap::deserialize(deserializer)?;
+        Ok(Arc::new(RwLock::new(map)))
+    }
+}
+
+// Module to handle serialization of AtomicF64
+pub(crate) mod atomic_f64 {
+    use super::*;
+    use serde::{Deserializer, Serializer};
+
+    pub fn serialize<S>(
+        value: &crate::AtomicF64,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let float_value = value.load(atomic::Ordering::Relaxed);
+        serializer.serialize_f64(float_value)
+    }
+
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<crate::AtomicF64, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let float_value = f64::deserialize(deserializer)?;
+        Ok(crate::AtomicF64::new(float_value))
+    }
+}
+
+
+

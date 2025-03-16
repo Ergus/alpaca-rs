@@ -18,9 +18,12 @@
 
 use std::{fmt, str::FromStr};
 
+use std::collections::HashMap;
 use serde::{Serialize, Deserialize, Serializer};
 use serde::ser::SerializeMap;
 use reqwest::header::HeaderMap;
+
+use std::sync::{Arc, RwLock, atomic};
 
 pub fn serialize_headers<S>(headers: &HeaderMap, serializer: S) -> Result<S::Ok, S::Error>
 where

@@ -16,9 +16,12 @@
 
 mod utils;
 pub use utils::PriceType;
+pub use utils::AtomicF64;
 
 mod alpaca_client;
 pub use alpaca_client::{AlpacaClient, AlpacaError};
+
+mod alpaca_wrapper;
 
 #[cfg(test)]
 mod tests;

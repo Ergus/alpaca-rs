@@ -218,7 +218,40 @@ impl AlpacaClient {
         side: &str,
         order_type: Option<&str>,
         time_in_force: Option<&str>,
-    ) -> Result<Value, AlpacaError> {
+    ) -> Result<Value, AlpacaError>
+    {
+        let order_map: HashMap<String, Value> = HashMap::from([
+            ("symbol".to_string(), Value::String(symbol.to_string())),
+            ("qty".to_string(), Value::Number(qty.into())),
+            ("side".to_string(), Value::String(side.to_string())),
+            ("type".to_string(), Value::String(order_type.unwrap_or("market").to_string())),
+            ("time_in_force".to_string(), Value::String(time_in_force.unwrap_or("ioc").to_string())),
+        ]);
+
+        self.make_request(
+                Method::POST,
+                "/v2/orders",
+                &self.base_url,
+                &[],
+                Some(&order_map),
+                None,
+            )
+            .await
+            .map_err(|e| {
+                error!("Failed to place order for {}: {}", symbol, e);
+                e
+            })
+    }
+
+    pub async fn place_order_full(
+        &self,
+        symbol: &str,
+        qty: i64,
+        side: &str,
+        order_type: Option<&str>,
+        time_in_force: Option<&str>,
+    ) -> Result<Value, AlpacaError>
+    {
 
         let order_map: HashMap<String, Value> = HashMap::from([
             ("symbol".to_string(), Value::String(symbol.to_string())),

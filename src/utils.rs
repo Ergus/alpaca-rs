@@ -39,7 +39,7 @@ where
 }
 
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash, std::cmp::Eq)]
 pub enum PriceType {
     Trades,
     Quotes,
